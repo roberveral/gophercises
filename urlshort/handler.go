@@ -69,13 +69,16 @@ func JSONHandler(jsonBytes []byte, fallback http.Handler) (http.HandlerFunc, err
 	return parseAndBuildMapHandler(parseJSON, jsonBytes, fallback)
 }
 
+// Represents the mapping between a path and the target url, as represented in JSON/YAML.
 type pathMapping struct {
 	Path string `yaml:"path" json:"path"`
 	URL  string `yaml:"url" json:"url"`
 }
 
+// An alias for a function that parses mappings from a byte sequence (it can be from YAML, JSON, etc)
 type dataParser func([]byte) ([]pathMapping, error)
 
+// A dataParser to parse the mappings from a YAML.
 func parseYAML(yamlBytes []byte) ([]pathMapping, error) {
 	var mappings []pathMapping
 	if err := yaml.Unmarshal(yamlBytes, &mappings); err != nil {
@@ -85,6 +88,7 @@ func parseYAML(yamlBytes []byte) ([]pathMapping, error) {
 	return mappings, nil
 }
 
+// A dataParser to parse the mappings from a JSON.
 func parseJSON(jsonBytes []byte) ([]pathMapping, error) {
 	var pathMappings []pathMapping
 	if err := json.Unmarshal(jsonBytes, &pathMappings); err != nil {
@@ -94,6 +98,7 @@ func parseJSON(jsonBytes []byte) ([]pathMapping, error) {
 	return pathMappings, nil
 }
 
+// Method to transform a slice of mappings to a map indexed by the path, to perform faster lookups.
 func buildMap(pathMappings []pathMapping) map[string]string {
 	pathsToUrls := make(map[string]string)
 
@@ -104,6 +109,8 @@ func buildMap(pathMappings []pathMapping) map[string]string {
 	return pathsToUrls
 }
 
+// Contains the common logic for handlers that parse a byte sequence. It receives the dataParser method
+// so it can parse mappings, transform them into a map and return a MapHandler for this data.
 func parseAndBuildMapHandler(parser dataParser, data []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	pathMappings, err := parser(data)
 	if err != nil {
